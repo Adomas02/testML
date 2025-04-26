@@ -1,13 +1,25 @@
 import pandas as pd
+import os
 
 
-def addSmellMarking(testCodeFile):
-    paths = [(r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest\spring-cloud-zuul-ratelimit.csv', 'isEagerTestManual'),
-            ( r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\mysteryGuest\spring-cloud-zuul-ratelimit.csv','isMysteryGuestManual'),
-             (r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\resourceOptimism\spring-cloud-zuul-ratelimit.csv','isResourceOptimismManual'),
-             (r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\testRedundancy\spring-cloud-zuul-ratelimit.csv','isTestRedundancyManual')]
+def addSmellMarking(testCodeFile, project_name):
+    eagerTestPath = r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest'
+    mysteryGuestPath = r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\mysteryGuest'
+    resourceOptimismPath = r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\resourceOptimism'
+    testRedundancyPath = r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\testRedundancy'
+
+    paths = [
+        (os.path.join(eagerTestPath, project_name), 'isEagerTestManual'),
+        (os.path.join(mysteryGuestPath, project_name), 'isMysteryGuestManual'),
+        (os.path.join(resourceOptimismPath, project_name), 'isResourceOptimismManual'),
+        (os.path.join(testRedundancyPath, project_name), 'isTestRedundancyManual')]
 
     merged_df = None
+
+    for file_path, column_name in paths:
+        print(file_path)
+        print(column_name)
+
 
     # Loop through files
     for file_path, column_name in paths:
@@ -27,9 +39,3 @@ def addSmellMarking(testCodeFile):
     merged_df = pd.merge(df1, df2, on='testCase')
 
     merged_df.to_csv('merged_file.csv', index=False)
-
-
-
-
-
-
