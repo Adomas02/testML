@@ -35,8 +35,22 @@ def extract_method_code(content, method_name):
 
 
 
-listRepos = [r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest\spring-cloud-zuul-ratelimit.csv',
-             r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest\achilles.csv']
+# Your target folder
+folder_path = r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest'  # <-- Change this
+
+# List all CSV files with full paths
+listRepos = [
+    os.path.join(folder_path, f)
+    for f in os.listdir(folder_path)
+    if f.endswith('.csv') and os.path.isfile(os.path.join(folder_path, f))
+]
+
+# Print all CSV files
+# for file in listRepos:
+#     print(file)
+
+# listRepos = [r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest\spring-cloud-zuul-ratelimit.csv',
+#              r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest\achilles.csv']
 
 for repo in listRepos:
     filename = os.path.splitext(os.path.basename(repo))[0]
@@ -71,10 +85,10 @@ for repo in listRepos:
                         continue
 
     if found_tests:
-        for test_path, code in found_tests:
-            print(test_path)
-            print(code)
-            print("----------------------------------")
+        # for test_path, code in found_tests:
+        #     print(test_path)
+        #     print(code)
+        #     print("----------------------------------")
 
         with open('found_tests.csv', mode='w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file)

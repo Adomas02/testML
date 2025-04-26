@@ -41,7 +41,7 @@ model = Sequential([
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # 7. Train model
-history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.1)
+history = model.fit(X_train, y_train, epochs=50, batch_size=16, validation_split=0.1)
 
 # 8. Evaluate model
 loss, accuracy = model.evaluate(X_test, y_test)
