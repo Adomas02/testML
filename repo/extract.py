@@ -1,14 +1,16 @@
 import os
 import re
 import sys
+import csv
+
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from excel.read import readRepoTestCases
 
-
 root_dir = r'C:\tests\spring-cloud-zuul-ratelimit'
 
-fully_qualified_tests = readRepoTestCases(r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest\spring-cloud-zuul-ratelimit.csv')
+fully_qualified_tests = readRepoTestCases(
+    r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest\spring-cloud-zuul-ratelimit.csv')
 
 # Store results
 found_tests = []
@@ -33,17 +35,17 @@ def extract_method_code(content, method_name):
         elif content[i] == '}':
             brace_count -= 1
         if inside and brace_count == 0:
-            return content[start_index:i+1]
+            return content[start_index:i + 1]
     return None
 
 
 for test_path in fully_qualified_tests:
+
     parts = test_path.split('.')
     method_name = parts[-1]
     class_path = os.path.join(*parts[:-1]) + '.java'
     target_filename = os.path.basename(class_path)
 
-    # Search for the Java file
     for dirpath, _, filenames in os.walk(root_dir):
         for filename in filenames:
             if filename.lower() == target_filename.lower():
@@ -54,15 +56,23 @@ for test_path in fully_qualified_tests:
                         # Use regex to search for the method (loose pattern to avoid false negatives)
                         method_code = extract_method_code(content, method_name)
                         if method_code:
-                            found_tests.append((test_path, full_path, method_code.strip()))
+                            found_tests.append((test_path, method_code.strip()))
                             break
                 except (UnicodeDecodeError, FileNotFoundError):
                     continue
 
-# Output
 if found_tests:
-    for test, path, code in found_tests:
-        print(f"\n=== {test} in {path} ===\n")
+    for test_path, code in found_tests:
+        print(test_path)
         print(code)
+        print("----------------------------------")
+
+    with open('found_tests.csv', mode='w', newline='', encoding='utf-8') as file:
+        writer = csv.writer(file)
+
+        writer.writerow(["test_path", "method_code"])
+
+        for row in found_tests:
+            writer.writerow(row)
 else:
     print("No matching test methods found.")
