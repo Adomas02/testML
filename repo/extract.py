@@ -6,6 +6,7 @@ import csv
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from excel.read import readRepoTestCases
+from repo.addSmellMarkings import addSmellMarking
 
 root_dir = r'C:\tests\spring-cloud-zuul-ratelimit'
 
@@ -70,9 +71,11 @@ if found_tests:
     with open('found_tests.csv', mode='w', newline='', encoding='utf-8') as file:
         writer = csv.writer(file)
 
-        writer.writerow(["test_path", "method_code"])
+        writer.writerow(["testCase", "method_code"])
 
         for row in found_tests:
             writer.writerow(row)
 else:
     print("No matching test methods found.")
+
+addSmellMarking('found_tests.csv')
