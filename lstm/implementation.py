@@ -17,11 +17,11 @@ from sklearn.utils.class_weight import compute_class_weight
 data = pd.read_csv(r'C:\Users\kazen\PycharmProjects\testML\repo\merged_file.csv')
 
 # 2. Convert labels properly (TRUE/FALSE → 1/0)
-data['isMysteryGuestManual'] = data['isMysteryGuestManual'].astype(str).str.upper().map({'TRUE': 1, 'FALSE': 0})
+data['isEagerTestManual'] = data['isEagerTestManual'].astype(str).str.upper().map({'TRUE': 1, 'FALSE': 0})
 
 # 3. Prepare input and output
 X = data['method_code'].astype(str).values
-y = data['isMysteryGuestManual'].values
+y = data['isEagerTestManual'].values
 
 # 4. Tokenize and pad
 tokenizer = Tokenizer(num_words=10000, oov_token='<OOV>')
@@ -55,7 +55,7 @@ model = Sequential([
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # 10. Train model with class weights
-history = model.fit(X_train, y_train, epochs=20, batch_size=32, validation_split=0.1, class_weight=class_weight)
+history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.1, class_weight=class_weight)
 
 # 11. Evaluate model
 loss, accuracy = model.evaluate(X_test, y_test)
