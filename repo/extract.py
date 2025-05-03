@@ -34,7 +34,6 @@ def extract_method_code(content, method_name):
     return None
 
 
-
 # Your target folder
 folder_path = r'C:\Users\kazen\Desktop\ML-Test-Smell-Detection-Online-Appendix\dataset\eagerTest'  # <-- Change this
 
@@ -97,12 +96,7 @@ for repo in listRepos:
 
             for row in found_tests:
                 writer.writerow(row)
+
+        addSmellMarking('found_tests.csv', repo)
     else:
         print("No matching test methods found.")
-
-    addSmellMarking('found_tests.csv',repo)
-
-
-
-
-
