@@ -1,9 +1,8 @@
 import pandas as pd
 import numpy as np
-import tensorflow as tf
 import matplotlib
 
-matplotlib.use('TkAgg')  # Force backend fix
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.text import Tokenizer
 from tensorflow.keras.preprocessing.sequence import pad_sequences
@@ -17,14 +16,17 @@ from sklearn.utils.class_weight import compute_class_weight
 data = pd.read_csv(r'C:\Users\kazen\PycharmProjects\testML\repo\merged_file.csv')
 
 # 2. Convert labels properly (TRUE/FALSE → 1/0)
-data['isEagerTestManual'] = data['isEagerTestManual'].astype(str).str.upper().map({'TRUE': 1, 'FALSE': 0})
+smell = 'isTestRedundancyManual'
+
+data[smell] = data[smell].astype(str).str.upper().map({'TRUE': 1, 'FALSE': 0})
 
 # 3. Prepare input and output
 X = data['method_code'].astype(str).values
-y = data['isEagerTestManual'].values
+y = data[smell].values
+
 
 # 4. Tokenize and pad
-tokenizer = Tokenizer(num_words=10000, oov_token='<OOV>')
+tokenizer = Tokenizer(num_words=300, oov_token='<OOV>')
 tokenizer.fit_on_texts(X)
 sequences = tokenizer.texts_to_sequences(X)
 X_padded = pad_sequences(sequences, padding='post', maxlen=300)
@@ -55,7 +57,7 @@ model = Sequential([
 model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 
 # 10. Train model with class weights
-history = model.fit(X_train, y_train, epochs=10, batch_size=32, validation_split=0.1, class_weight=class_weight)
+history = model.fit(X_train, y_train, epochs=15, batch_size=32, validation_split=0.1, class_weight=class_weight)
 
 # 11. Evaluate model
 loss, accuracy = model.evaluate(X_test, y_test)
@@ -66,12 +68,10 @@ print(f"Test Accuracy: {accuracy:.4f}")
 y_pred_probs = model.predict(X_test)
 y_pred = (y_pred_probs > 0.5).astype(int)
 f1 = f1_score(y_test, y_pred)
-print(f"F1-score for Mystery Guest smell: {f1:.4f}")
+print(f"F1-score for {smell} smell: {f1:.4f}")
 
 # 13. Save model
 model.save('lstm_mystery_guest_detector.keras')
-
-# --- 🎯 Performance Visualization ---
 
 # 1. Plot Loss over Epochs
 plt.figure(figsize=(8, 6))
@@ -104,14 +104,14 @@ fpr, tpr, _ = roc_curve(y_test, y_pred_probs)
 roc_auc = auc(fpr, tpr)
 
 plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, label=f'Eager Test (AUC = {roc_auc:.2f})', linewidth=2)
+plt.plot(fpr, tpr, label=f'{smell} (AUC = {roc_auc:.2f})', linewidth=2)
 plt.plot([0, 1], [0, 1], 'k--', label='Random Guess')
 
 plt.xlim([0.0, 1.0])
 plt.ylim([0.0, 1.05])
 plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
-plt.title('ROC Curve for Eager Test Classification')
+plt.title(f'ROC Curve for {smell} Classification')
 plt.legend(loc="lower right")
 plt.grid(True)
 plt.tight_layout()
