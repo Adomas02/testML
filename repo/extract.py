@@ -98,5 +98,6 @@ for repo in listRepos:
                 writer.writerow(row)
 
         addSmellMarking('found_tests.csv', repo)
+        print(f'found {root_dir}')
     else:
-        print("No matching test methods found.")
+        print(f'No matching test methods found.{root_dir}')
