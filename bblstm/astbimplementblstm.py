@@ -1,8 +1,9 @@
+import javalang
 import pandas as pd
 import numpy as np
 import matplotlib
 import tensorflow as tf
-from tensorflow.keras.utils import plot_model
+
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 from tensorflow.keras.preprocessing.text import Tokenizer
@@ -20,6 +21,38 @@ import os
 tf.random.set_seed(42)
 np.random.seed(42)
 
+
+def ast_to_dict(node):
+    if isinstance(node, javalang.ast.Node):
+        result = {"_type": type(node).__name__}
+        for field in node.attrs:
+            value = getattr(node, field)
+            result[field] = ast_to_dict(value)
+        return result
+    elif isinstance(node, list):
+        return [ast_to_dict(item) for item in node]
+    elif isinstance(node, (str, int, float, bool)) or node is None:
+        return node
+    else:
+        return str(node)
+
+def flatten_ast(ast):
+    if isinstance(ast, dict):
+        tokens = [ast.get('_type', '')]
+        for key, value in ast.items():
+            if key != '_type':
+                tokens.extend(flatten_ast(value))
+        return tokens
+    elif isinstance(ast, list):
+        tokens = []
+        for item in ast:
+            tokens.extend(flatten_ast(item))
+        return tokens
+    elif isinstance(ast, str):
+        return [ast]
+    else:
+        return []
+
 # 1. Load dataset
 data = pd.read_csv(r'C:\Users\kazen\PycharmProjects\testML\repo\merged_file.csv')
 
@@ -31,24 +64,69 @@ smells = [
 ]
 
 # Hyperparameter ranges (simplify, focus on higher dropout)
-epochs_list = [1,10, 15, 20]
+epochs_list = [10, 15, 20]
 dropout_rates = [0.4, 0.5, 0.6]
 
 for smell in smells:
     print(f'Processing smell: {smell}')
-
     data[smell] = data[smell].astype(str).str.upper().map({'TRUE': 1, 'FALSE': 0})
     X = data['method_code'].astype(str).values
     y = data[smell].values
 
+    asts = []
+    for code in X:
+        try:
+            wrapper = f"public class DummyClass {{ {code} }}"
+            tree = javalang.parse.parse(wrapper)
+            if tree.types and hasattr(tree.types[0], 'body'):
+                methods = [m for m in tree.types[0].body if isinstance(m, javalang.tree.MethodDeclaration)]
+                ast_dict = [ast_to_dict(m) for m in methods]
+            else:
+                ast_dict = []
+        except Exception as e:
+            ast_dict = {"error": str(e)}
+        asts.append(ast_dict)
+
+    # Clean ASTs
+    valid = [
+        (ast, label) for ast, label in zip(asts, y)
+        if ast and not (isinstance(ast, dict) and "error" in ast)
+    ]
+    if valid:
+        asts_clean, y_clean = zip(*valid)
+        asts_clean = list(asts_clean)
+        y_clean = np.array(y_clean)
+    else:
+        print(f"No valid ASTs found for smell {smell}, skipping.")
+        continue  # skip this smell, or handle as needed
+
+    if len(asts_clean) == 0 or len(y_clean) == 0:
+        print(f"No data for {smell}, skipping.")
+        continue
+
+    # Linearize for BLSTM
+    X_tokens = [flatten_ast(ast) for ast in asts_clean]
+
     # Tokenize and pad
     tokenizer = Tokenizer(num_words=20000, oov_token='<OOV>')
-    tokenizer.fit_on_texts(X)
-    sequences = tokenizer.texts_to_sequences(X)
+    tokenizer.fit_on_texts(X_tokens)
+    sequences = tokenizer.texts_to_sequences(X_tokens)
     X_padded = pad_sequences(sequences, padding='post', maxlen=150)
 
+    df_save = pd.DataFrame({
+        'method_code': [code for code, ast in zip(X, asts) if ast and not (isinstance(ast, dict) and "error" in ast)],
+        'ast_tokens': [' '.join(tokens) for tokens in X_tokens],
+        'label': y_clean
+    })
+
+    df_save.to_csv('methods_with_ast_tokens.csv', index=False, escapechar='\\',  encoding='utf-8', errors='replace')
+    print("Saved to methods_with_ast_tokens.csv")
+
     # Split dataset
-    X_train, X_test, y_train, y_test = train_test_split(X_padded, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X_padded, y_clean, test_size=0.2, random_state=42)
+
+    print("Train X shape:", X_train.shape, "y shape:", y_train.shape)
+    print("Test X shape:", X_test.shape, "y shape:", y_test.shape)
 
     # Compute class weights
     weights = compute_class_weight(class_weight='balanced', classes=np.unique(y_train), y=y_train)
@@ -83,8 +161,6 @@ for smell in smells:
                 callbacks=[early_stop],
                 verbose=2
             )
-
-            plot_model(model, to_file='blstm_model.png', show_shapes=True, show_layer_names=True)
 
             out_dir = os.path.join(smell, f'dropout_{dropout}', f'epochs_{epochs}')
             os.makedirs(out_dir, exist_ok=True)

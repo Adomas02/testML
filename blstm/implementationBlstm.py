@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import matplotlib
+import tensorflow as tf
 
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
@@ -11,12 +12,17 @@ from tensorflow.keras.layers import Embedding, LSTM, Dense, Dropout, Bidirection
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import roc_curve, auc, f1_score
 from sklearn.utils.class_weight import compute_class_weight
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import os
+
+tf.random.set_seed(42)
+np.random.seed(42)
 
 # 1. Load dataset
 data = pd.read_csv(r'C:\Users\kazen\PycharmProjects\testML\repo\merged_file.csv')
 
 # Test code smells to loop through
+# smells = ['isEagerTestManual']
 smells = ['isEagerTestManual', 'isMysteryGuestManual', 'isResourceOptimismManual', 'isTestRedundancyManual']
 
 # Hyperparameter ranges
@@ -30,10 +36,10 @@ for smell in smells:
     y = data[smell].values
 
     # Tokenize and pad
-    tokenizer = Tokenizer(num_words=10000, oov_token='<OOV>')
+    tokenizer = Tokenizer(num_words=20000, oov_token='<OOV>')
     tokenizer.fit_on_texts(X)
     sequences = tokenizer.texts_to_sequences(X)
-    X_padded = pad_sequences(sequences, padding='post', maxlen=300)
+    X_padded = pad_sequences(sequences, padding='post', maxlen=150)
 
     # Split dataset
     X_train, X_test, y_train, y_test = train_test_split(X_padded, y, test_size=0.2, random_state=42)
@@ -46,7 +52,7 @@ for smell in smells:
         for epochs in epochs_list:
             print(f'Training model for {smell} with epochs={epochs} and dropout={dropout}')
             model = Sequential([
-                Embedding(input_dim=10000, output_dim=128, input_length=300),
+                Embedding(input_dim=20000, output_dim=128, input_length=150),
                 Bidirectional(LSTM(128, return_sequences=True)),
                 Dropout(dropout),
                 Bidirectional(LSTM(64)),
@@ -118,3 +124,13 @@ for smell in smells:
             plt.close()
 
             model.save(os.path.join(out_dir, 'model.keras'))
+
+            cleaned_smell_name = smell.replace("is", "").replace("Manual", "")
+
+            cm = confusion_matrix(y_test, y_pred)
+            disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=['FALSE', 'TRUE'])
+            plt.figure(figsize=(6, 6))
+            disp.plot(cmap=plt.cm.Blues, ax=plt.gca())
+            plt.title(f'Confusion Matrix {cleaned_smell_name}')
+            plt.savefig(os.path.join(out_dir, 'confusion_matrix.png'))
+            plt.close()
